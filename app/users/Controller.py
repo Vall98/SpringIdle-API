@@ -2,17 +2,14 @@ import app_secrets
 import bcrypt
 import jwt
 
-from app.users.db import user_table
+from app.users.db import User, user_table
+from app.users.scopes import scopes, RouteScopes
 from datetime import datetime, timedelta, timezone
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jwt.exceptions import InvalidTokenError
+from fastapi import Depends, HTTPException, Security, status
 from typing import Annotated
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-def create_access_token(username : str):
-    data = {"sub": username}
+def create_access_token(user: User):
+    data = {"sub": user.username, "scopes": scopes[user.perm_level]}
     expires_delta = timedelta(minutes=app_secrets.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = data.copy()
     if expires_delta:
@@ -23,25 +20,18 @@ def create_access_token(username : str):
     encoded_jwt = jwt.encode(to_encode, app_secrets.SECRET_KEY, algorithm=app_secrets.ALGORITHM)
     return encoded_jwt
 
-def hash_password(password : str):
+def hash_password(password: str):
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
-def check_password(plain : str, hashed):
+def check_password(plain: str, hashed):
     return bcrypt.checkpw(plain.encode('utf-8'), hashed)
 
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+def get_current_user(username: Annotated[str, Security(RouteScopes)]):
     cred_error = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid authentication credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    try:
-        payload = jwt.decode(token, app_secrets.SECRET_KEY, algorithms=[app_secrets.ALGORITHM])
-        username = payload.get("sub")
-        if username is None:
-            raise cred_error
-    except InvalidTokenError:
-        raise cred_error
     user = get_user(username)
     if user is None:
         raise cred_error
@@ -55,3 +45,6 @@ def get_user(username, password=None):
 
 def create_user(username, password):
     return user_table.add_user(username, hash_password(password))
+
+def get_all_users(_: Annotated[str, Security(RouteScopes)]):
+    return user_table.get_users()
