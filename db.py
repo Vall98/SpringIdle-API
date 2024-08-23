@@ -6,8 +6,9 @@ db_client = boto3.resource('dynamodb', region_name='eu-west-3')
 
 class BaseTable:
 
-    def __init__(self, table_name):
+    def __init__(self, table_name, primary_key):
         self.table_name = table_name
+        self.primary_key = primary_key
         self.dyn_resource = db_client
         if not self.exists():
             self.create_table()
@@ -32,7 +33,8 @@ class BaseTable:
         raise NotImplementedError
 
     def create_table(self):
-        key_schema, attr_def = self.get_schema()
+        key_schema = [{"AttributeName": self.primary_key, "KeyType": "HASH"}]
+        attr_def = [{"AttributeName": self.primary_key, "AttributeType": "S"}]
         try:
             self.table = self.dyn_resource.create_table(
                 TableName=self.table_name,
@@ -49,22 +51,27 @@ class BaseTable:
             print(f"Reason: {err.response["Error"]["Code"]}: {err.response["Error"]["Message"]}")
             raise
     
-    def add_entry(self, item, key):
+    def put_item(self, item, key):
         try:
-            response = self.table.put_item(Item=item, ReturnValues='ALL_NEW')
+            response = self.table.put_item(Item=item, ReturnValues='ALL_OLD')
         except ClientError as err:
-            print(f"Could not add entry {key} to table {self.table_name}.")
+            print(f"Could not put item {key} to table {self.table_name}.")
             print(f"Reason: {err.response["Error"]["Code"]}: {err.response["Error"]["Message"]}")
             raise
         else:
             if "Item" in response:
                 return response["Item"]
         return None
-
     
-    def get_entry(self, query, key):    
+    def get_item(self, query, key, attributes=None):    
         try:
-            response = self.table.get_item(Key=query)
+            if attributes:
+                response = self.table.get_item(
+                    Key=query,
+                    ProjectionExpression=attributes,
+                )
+            else:
+                response = self.table.get_item(Key=query)
         except ClientError as err:
             print(f"Could not get {key} from table {self.table.name}.")
             print(f"Reason: {err.response["Error"]["Code"]}: {err.response["Error"]["Message"]}")
@@ -74,19 +81,44 @@ class BaseTable:
                 return response["Item"]
         return None
         
-    def get_query(self, condition_expr, key):
+    def query(self, key, condition_expr, attributes=None): # maybe use kwargs?
         try:
-            response = self.table.query(KeyConditionExpression=condition_expr)
+            if attributes:
+                response = self.table.query(
+                    KeyConditionExpression=condition_expr,
+                    ProjectionExpression=attributes,
+                )
+            else:
+                response = self.table.query(
+                    KeyConditionExpression=condition_expr,
+                )
         except ClientError as err:
             print(f"Could not query for {key}.")
             print(f"Reason: {err.response["Error"]["Code"]}: {err.response["Error"]["Message"]}")
             raise
         else:
-            if "Item" in response:
-                return response["Item"]
+            if "Items" in response:
+                return response["Items"]
         return None
     
-    def update_entry(self, query, update_expr, expr_attr_values, key):
+    def scan(self, key, attributes=None): # maybe use kwargs?
+        try:
+            if attributes:
+                response = self.table.scan(
+                    ProjectionExpression=attributes,
+                )
+            else:
+                response = self.table.scan()
+        except ClientError as err:
+            print(f"Could not scan for {key}.")
+            print(f"Reason: {err.response["Error"]["Code"]}: {err.response["Error"]["Message"]}")
+            raise
+        else:
+            if "Items" in response:
+                return response["Items"]
+        return None
+    
+    def update_item(self, query, update_expr, expr_attr_values, key):
         try:
             response = self.table.update_item(
                 Key=query,
