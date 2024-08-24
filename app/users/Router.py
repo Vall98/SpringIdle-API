@@ -1,6 +1,6 @@
-from app.users import controller
+from app.users import auth, controller
 from app.users.db import User
-from app.users.scopes import Scopes, RouteScopes
+from app.users.scopes import Scopes
 from fastapi import APIRouter, Depends, HTTPException, Security, status
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
@@ -20,7 +20,8 @@ def signup(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
             detail="Username already taken",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return {"access_token": controller.create_access_token(user), "token_type": "bearer"}
+    token, expires = auth.create_access_token(user)
+    return {"access_token": token, "expires": expires, "token_type": "bearer"}
 
 @router.post('/token')
 def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
@@ -31,7 +32,8 @@ def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return {"access_token": controller.create_access_token(user), "token_type": "bearer"}
+    token, expires = auth.create_access_token(user)
+    return {"access_token": token, "expires": expires, "token_type": "bearer"}
 
 @router.get("/me")
 async def read_users_me(current_user: Annotated[User, Security(controller.get_current_user, scopes=[Scopes.USER_ME])]):
