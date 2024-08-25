@@ -26,7 +26,7 @@ jobs:
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: arn:aws:iam::055316061090:role/springIdle-API-deploy-s3
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/springIdle-API-deploy-s3
           role-session-name: samplerolesession
           aws-region: ${{ env.AWS_REGION }}
       # Upload a file to AWS s3
