@@ -21,8 +21,12 @@ jobs:
              zip -r9 ../function.zip .
              cd ..
              rm -rf tmp_package/
+             echo "SECRET_KEY = \"${{secrets.APP_SECRET_KEY}}\"" > app_secrets.py
+             echo "ALGORITHM = \"${{secrets.APP_ALGORITHM}}\"" >> app_secrets.py
+             echo "ACCESS_TOKEN_EXPIRE_MINUTES = \"${{secrets.APP_ACCESS_TOKEN_EXPIRE_MINUTES}}\"" >> app_secrets.py
              zip -g ./function.zip -r app
-             zip -g ./function.zip main.py
+             zip -g ./function.zip main.py app_secrets.py
+             rm app_secrets.py
       - name: Configure aws credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
