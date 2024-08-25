@@ -26,4 +26,4 @@ app.include_router(users_router)
 # /friends/
 app.include_router(friends_router)
 
-handler = Mangum(app)
+lambda_handler = Mangum(app)
