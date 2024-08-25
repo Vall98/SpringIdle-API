@@ -29,6 +29,7 @@ jobs:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ID }}:role/springIdle-API-deploy-s3
           role-session-name: samplerolesession
           aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
       # Upload a file to AWS s3
       - name:  Deploy
         run: |
