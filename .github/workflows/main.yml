@@ -18,7 +18,7 @@ jobs:
         run: |
              pip install -r requirements.txt --target ./tmp_package --platform manylinux2014_x86_64 --only-binary=:all:
              cd ./tmp_package
-             zip -r9 ../function.zip .
+             zip -r9 ../dependencies.zip .
              cd ..
              rm -rf tmp_package/
              echo "SECRET_KEY = \"${{secrets.APP_SECRET_KEY}}\"" > app_secrets.py
@@ -38,6 +38,11 @@ jobs:
       - name:  Deploy to S3 bucket
         run: |
           aws s3 cp ./function.zip s3://${{ env.BUCKET_NAME }}/
+          aws s3 cp ./dependencies.zip s3://${{ env.BUCKET_NAME }}/
       - name:  Deploy to Lambda
         run: |
           aws lambda update-function-code --function-name SpringIdle-API --s3-bucket ${{ env.BUCKET_NAME }} --s3-key function.zip
+          aws lambda publish-layer-version --layer-name python-dependencies-layer \
+            --s3-bucket ${{ env.BUCKET_NAME }} --s3-key dependencies.zip \
+            --compatible-runtimes python3.12 \
+            --compatible-architectures "x86_64"
