@@ -1,4 +1,4 @@
-name: S3 Deploy for SpringIdle API
+name: Deploy SpringIdle-API to AWS
 on: [push]
 env:
   BUCKET_NAME : ${{ secrets.S3_BUCKET }}
@@ -31,6 +31,9 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           audience: sts.amazonaws.com
       # Upload a file to AWS s3
-      - name:  Deploy
+      - name:  Deploy to S3 bucket
         run: |
           aws s3 cp ./function.zip s3://${{ env.BUCKET_NAME }}/
+      - name:  Deploy to Lambda
+        run: |
+          aws lambda update-function-code --function-name SpringIdle-API --s3-bucket ${{ env.BUCKET_NAME }} --s3-key function.zip
