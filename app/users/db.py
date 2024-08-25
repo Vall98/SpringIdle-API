@@ -1,5 +1,5 @@
 from app.users.scopes import Roles
-from db import BaseTable
+from app.db import BaseTable
 from pydantic import BaseModel
 
 USERS_TABLE_NAME = 'users'

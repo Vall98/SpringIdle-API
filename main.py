@@ -2,6 +2,7 @@ from app.friends.router import router as friends_router
 from app.users.router import router as users_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from mangum import Mangum
 
 app = FastAPI()
 
@@ -24,3 +25,5 @@ app.include_router(users_router)
 
 # /friends/
 app.include_router(friends_router)
+
+handler = Mangum(app)

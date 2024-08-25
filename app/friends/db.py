@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from db import BaseTable
+from app.db import BaseTable
 
 FRIENDS_TABLE_NAME = 'friends'
 
