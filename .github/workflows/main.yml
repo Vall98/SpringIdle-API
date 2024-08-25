@@ -1,11 +1,14 @@
 name: S3 Deploy for SpringIdle API
 on: [push]
+env:
+  BUCKET_NAME : ${{ secrets.S3_BUCKET }}
+  AWS_REGION : ${{ secrets.S3_BUCKET_REGION }}
+permissions:
+  id-token: write   # This is required for requesting the JWT
+  contents: read    # This is required for actions/checkout
 jobs:
   run:
     runs-on: ubuntu-latest
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,16 +23,13 @@ jobs:
              rm -rf tmp_package/
              zip -g ./function.zip -r app
              zip -g ./function.zip main.py
-
-      - name: Deploy
-        uses: reggionick/s3-deploy@v4
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v3
         with:
-          folder: .
-          bucket: ${{ secrets.S3_BUCKET }}
-          bucket-region: ${{ secrets.S3_BUCKET_REGION }}
-          dist-id: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
-          invalidation: /
-          delete-removed: true
-          no-cache: true
-          private: true
-          files-to-include: '{./function.zip}'
+          role-to-assume: arn:aws:iam::055316061090:role/springIdle-API-deploy-s3
+          role-session-name: samplerolesession
+          aws-region: ${{ env.AWS_REGION }}
+      # Upload a file to AWS s3
+      - name:  Deploy
+        run: |
+          aws s3 cp ./function.zip s3://${{ env.BUCKET_NAME }}/
