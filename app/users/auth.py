@@ -68,8 +68,8 @@ def RouteCredentials(route_scopes: SecurityScopes, token: Annotated[str, Depends
     if username is None:
         raise credentials_exception
     
-    expires: datetime | None = payload.get(TokenAttributes.EXPIRES)
-    if expires is None or datetime.now(timezone.utc) > expires:
+    expires: int | None = payload.get(TokenAttributes.EXPIRES)
+    if expires is None or datetime.now(timezone.utc).timestamp() > expires:
         raise token_expired_exception
     
     user_scopes = payload.get(TokenAttributes.SCOPES, None)
